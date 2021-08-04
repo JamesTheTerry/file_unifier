@@ -1,23 +1,24 @@
 var walk = require("walk");
 const fs = require('fs')
+const path = require("path")
 const { exec, execSync } = require('child_process');
-var files = [];
 
-const getAllFilePaths = (directory) => {
-  // Walker options
-  return new Promise(resolve => {
-    var walker = walk.walk(`./${directory}`, {followLinks: false});
 
-    walker.on("file", function(root, stat, next) {
-      // Add this file to the list of files
-      files.push(root + "/" + stat.name);
-      next();
-    });
+const getAllFiles = function(dirPath, arrayOfFiles) {
+  files = fs.readdirSync(dirPath)
 
-    walker.on("end", function() {
-      resolve(files);
-    });
+  arrayOfFiles = arrayOfFiles || []
+
+  files.forEach(function(file) {
+    console.log(dirPath + '/' + file)
+    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+      arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles)
+    } else {
+      arrayOfFiles.push(dirPath + '/' + file)
+    }
   })
+
+  return arrayOfFiles;
 }
 
 const createFile = ({ filePath, subDirectories, destinationDirectory, subFilePath }) => {
@@ -41,14 +42,22 @@ const firstSetBuilder = ({ inputHolder, inputDirectory, files, destinationDirect
       destinationDirectory,
       subFilePath
     })
-    // if (subDirectories !== '') {
-    //   execSync(`mkdir -p ${destinationDirectory}/${subDirectories}`);
-    // }
-    // console.log(`cp ${files[i]} ${destinationDirectory}/${subFilePath}`)
-    // let message = execSync(`cp ${files[i]} ${destinationDirectory}/${subFilePath}`)
   }
 }
 
+const diffCheck = (file1, file2) => {
+  try {
+    var x = execSync(`diff ${file1} ${file2}`)
+    if (x.toString() === '') {
+      return false;
+    } else {
+      return true;
+    }
+  } catch (err) {
+    // console.log(err.output[1].toString())
+    return true;
+  }
+}
 
 
 // go through each file
@@ -62,6 +71,8 @@ const firstSetBuilder = ({ inputHolder, inputDirectory, files, destinationDirect
     // copy file to dest
 const secondarySetBuilder = ({ inputHolder, inputDirectory, files, destinationDirectory, directoryIndex }) => {
   for (let i = 0; i < files.length; i++) {
+    console.log(`${inputHolder}/${inputDirectory}`)
+    console.log(files[i])
     const subFilePath = files[i].split(`${inputHolder}/${inputDirectory}`)[1].slice(1);
     console.log('subFilePath:', subFilePath)
     const subDirectories = subFilePath.split('/').slice(0, subFilePath.split('/').length - 1).join('/')
@@ -70,9 +81,17 @@ const secondarySetBuilder = ({ inputHolder, inputDirectory, files, destinationDi
     console.log(`DEST: ${destinationDirectory}/${subFilePath}`)
     if (fs.existsSync(`./${destinationDirectory}/${subFilePath}`)) {
       console.log('file exists\n')
+      for (let j = 0; j < directoryIndex; j++) {
+        
+      }
     } else {
       console.log('file does not exist\n')
-
+      createFile({
+        filePath: files[i],
+        subDirectories,
+        destinationDirectory,
+        subFilePath
+      })
     }
   }
 }
@@ -85,7 +104,7 @@ const secondarySetBuilder = ({ inputHolder, inputDirectory, files, destinationDi
 // })
 
 const orchestra = async ({ inputHolder, inputDirectories, destinationDirectory }) => {
-  const firstFileSet = await getAllFilePaths(`${inputHolder}/${inputDirectories[0]}`)
+  const firstFileSet = await getAllFiles(`${inputHolder}/${inputDirectories[0]}`)
   console.log(firstFileSet)
   execSync(`mkdir -p ${destinationDirectory}`)
 
@@ -95,11 +114,12 @@ const orchestra = async ({ inputHolder, inputDirectories, destinationDirectory }
     files: firstFileSet,
     destinationDirectory
   })
-  return;
 
   for (let i = 1; i < inputDirectories.length; i++) {
-    const files = await getAllFilePaths(`${inputHolder}/${inputDirectories[i]}`)
+    console.log(`${inputHolder}/${inputDirectories[i]}`)
+    const files = await getAllFiles(`${inputHolder}/${inputDirectories[i]}`)
     console.log(files);
+
     secondarySetBuilder({
       inputHolder,
       inputDirectory: inputDirectories[i],
@@ -109,13 +129,11 @@ const orchestra = async ({ inputHolder, inputDirectories, destinationDirectory }
     })
   }
 }
-// var x = execSync('echo diff.txt')
-// console.log(x.toString('utf8'))
 
-orchestra({
-  inputHolder: 'source',
-  inputDirectories: ['test1', 'test2'],
-  destinationDirectory: 'dest2'
-})
-//
+// orchestra({
+//   inputHolder: 'source',
+//   inputDirectories: ['test1', 'test2'],
+//   destinationDirectory: 'dest2'
+// })
+
 // console.log(fs.existsSync('./dest1/hat'))
