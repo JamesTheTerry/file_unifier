@@ -4,11 +4,10 @@
 
 - createFile and creating directories
 - firstSetBuilder
-
-## To Do
-
-- orchestra (in progress)
-- secondarySetBuilder (in progress)
-- diffCheck (in progress)
+- orchestra
+- secondarySetBuilder
+- diffCheck
   - check primary files
   - figure out who to check subsequent variants
+
+## To Do

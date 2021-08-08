@@ -2,6 +2,7 @@ var walk = require("walk");
 const fs = require('fs')
 const path = require("path")
 const { exec, execSync } = require('child_process');
+const VARIANT_SUFFIX = '-VARIANT-';
 
 
 const getAllFiles = function(dirPath, arrayOfFiles) {
@@ -45,7 +46,10 @@ const firstSetBuilder = ({ inputHolder, inputDirectory, files, destinationDirect
   }
 }
 
-const diffCheck = (file1, file2) => {
+
+// true: files are different
+// false: files are the same
+const checkIfFilesDiff = (file1, file2) => {
   try {
     var x = execSync(`diff ${file1} ${file2}`)
     if (x.toString() === '') {
@@ -71,7 +75,7 @@ const diffCheck = (file1, file2) => {
     // copy file to dest
 const secondarySetBuilder = ({ inputHolder, inputDirectory, files, destinationDirectory, directoryIndex }) => {
   for (let i = 0; i < files.length; i++) {
-    console.log(`${inputHolder}/${inputDirectory}`)
+    console.log(`\n${inputHolder}/${inputDirectory}`)
     console.log(files[i])
     const subFilePath = files[i].split(`${inputHolder}/${inputDirectory}`)[1].slice(1);
     console.log('subFilePath:', subFilePath)
@@ -79,10 +83,36 @@ const secondarySetBuilder = ({ inputHolder, inputDirectory, files, destinationDi
     console.log('subDirectories:', subDirectories)
 
     console.log(`DEST: ${destinationDirectory}/${subFilePath}`)
+
     if (fs.existsSync(`./${destinationDirectory}/${subFilePath}`)) {
-      console.log('file exists\n')
-      for (let j = 0; j < directoryIndex; j++) {
-        
+      console.log('file exists')
+      // the base file exists
+        // if diff from base file && all variants
+          // add as new variant
+      let existingFilePath = `./${destinationDirectory}/${subFilePath}`;
+      if (checkIfFilesDiff(existingFilePath, files[i]) === false) {
+        console.log(`${files[i]} already exists as ${existingFilePath}`);
+        continue;
+      }
+      for (let j = 1; j <= directoryIndex; j++) {
+        const extensionSplitIndex = existingFilePath.split('.').length - 1;
+        let variantName = `${existingFilePath.split('.')[extensionSplitIndex - 1]}${VARIANT_SUFFIX}${j}`;
+        const extension = existingFilePath.split('.')[extensionSplitIndex];
+        variantName = '.' +  variantName + '.' + extension
+
+        if (fs.existsSync(variantName) && checkIfFilesDiff(variantName, files[i]) === false) {
+          console.log(`${files[i]} already exists as ${variantName}`)
+          continue;
+        }
+
+        console.log(`New variant found: ${files[i]} !\n${VARIANT_SUFFIX}${directoryIndex} will be created`);
+        const newVariantSubFilePath = `${subFilePath.split('.')[0]}${VARIANT_SUFFIX}${directoryIndex}.${extension}`;
+        createFile({
+          filePath: files[i],
+          subDirectories,
+          destinationDirectory,
+          subFilePath: newVariantSubFilePath
+        })
       }
     } else {
       console.log('file does not exist\n')
@@ -96,11 +126,14 @@ const secondarySetBuilder = ({ inputHolder, inputDirectory, files, destinationDi
   }
 }
 
+// for testing
 // secondarySetBuilder({
-//   files: ['./source/test2/a1.txt', './source/test2/a2.txt', './source/test2/a3-diff.txt', './source/test2/charlie/c1.txt', './source/test2/beta/b1.txt'],
+//   files: ['source/test2/a1.txt', 'source/test2/a2.txt', 'source/test2/a3-diff.txt', 'source/test2/charlie/c1.txt', 'source/test2/beta/b1.txt'],
+//   // files: ['source/test2/a3-diff.txt'],
 //   inputDirectory: 'test2',
 //   inputHolder: 'source',
-//   destinationDirectory: 'dest1'
+//   destinationDirectory: 'dest2',
+//   directoryIndex: 1
 // })
 
 const orchestra = async ({ inputHolder, inputDirectories, destinationDirectory }) => {
@@ -130,10 +163,8 @@ const orchestra = async ({ inputHolder, inputDirectories, destinationDirectory }
   }
 }
 
-// orchestra({
-//   inputHolder: 'source',
-//   inputDirectories: ['test1', 'test2'],
-//   destinationDirectory: 'dest2'
-// })
-
-// console.log(fs.existsSync('./dest1/hat'))
+orchestra({
+  inputHolder: 'source',
+  inputDirectories: ['test1', 'test2', 'test3', 'test4'],
+  destinationDirectory: 'dest2'
+})
