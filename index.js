@@ -137,7 +137,7 @@ const secondarySetBuilder = ({ inputHolder, inputDirectory, files, destinationDi
 // })
 
 const orchestra = async ({ inputHolder, inputDirectories, destinationDirectory }) => {
-  const firstFileSet = await getAllFiles(`${inputHolder}/${inputDirectories[0]}`)
+  const firstFileSet = await getAllFiles(`${inputHolder}/${inputDirectories[0]}`);
   console.log(firstFileSet)
   execSync(`mkdir -p ${destinationDirectory}`)
 
