@@ -24,10 +24,10 @@ const getAllFiles = function(dirPath, arrayOfFiles) {
 
 const createFile = ({ filePath, subDirectories, destinationDirectory, subFilePath }) => {
   if (subDirectories !== '') {
-    execSync(`mkdir -p ${destinationDirectory}/${subDirectories}`);
+    execSync(`mkdir -p "${destinationDirectory}/${subDirectories}"`);
   }
-  console.log(`cp ${filePath} ${destinationDirectory}/${subFilePath}`);
-  let message = execSync(`cp ${filePath} ${destinationDirectory}/${subFilePath}`);
+  console.log(`cp "${filePath}" "${destinationDirectory}/${subFilePath}"`);
+  let message = execSync(`cp "${filePath}" "${destinationDirectory}/${subFilePath}"`);
 }
 
 const firstSetBuilder = ({ inputHolder, inputDirectory, files, destinationDirectory}) => {
@@ -51,7 +51,7 @@ const firstSetBuilder = ({ inputHolder, inputDirectory, files, destinationDirect
 // false: files are the same
 const checkIfFilesDiff = (file1, file2) => {
   try {
-    var x = execSync(`diff ${file1} ${file2}`)
+    var x = execSync(`diff "${file1}" "${file2}"`)
     if (x.toString() === '') {
       return false;
     } else {
